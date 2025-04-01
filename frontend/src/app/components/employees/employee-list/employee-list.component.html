@@ -98,7 +98,7 @@
             <button class="btn btn-sm btn-warning" [routerLink]="['/employees', employee.id, 'edit']">
               <i class="fas fa-edit"></i>
             </button>
-            <button class="btn btn-sm btn-danger" (click)="deleteEmployee(employee.id)">
+            <button class="btn btn-sm btn-danger" (click)="deleteEmployee(employee.id!)">
               <i class="fas fa-trash"></i>
             </button>
           </td>

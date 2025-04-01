@@ -1,13 +1,15 @@
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../../services/auth.service';
-import { first } from 'rxjs/operators';
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-signup',
   templateUrl: './signup.component.html',
-  styleUrls: ['./signup.component.css']
+  styleUrls: ['./signup.component.css'],
+  standalone: true,
+  imports: [CommonModule, ReactiveFormsModule, RouterModule]
 })
 export class SignupComponent implements OnInit {
   signupForm!: FormGroup;
@@ -19,7 +21,7 @@ export class SignupComponent implements OnInit {
     private formBuilder: FormBuilder,
     private router: Router,
     private authService: AuthService
-  ) {
+  ) { 
     // Redirect if already logged in
     if (this.authService.isLoggedIn()) {
       this.router.navigate(['/employees']);
@@ -28,7 +30,7 @@ export class SignupComponent implements OnInit {
 
   ngOnInit(): void {
     this.signupForm = this.formBuilder.group({
-      username: ['', [Validators.required, Validators.minLength(3)]],
+      username: ['', Validators.required],
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required, Validators.minLength(6)]]
     });
@@ -46,20 +48,18 @@ export class SignupComponent implements OnInit {
     }
 
     this.loading = true;
-  this.authService.signup(
-    this.signupForm.get('username')?.value,
-    this.signupForm.get('email')?.value,
-    this.signupForm.get('password')?.value
-  )
-    .pipe(first())
-    .subscribe(
-      data => {
+    this.authService.signup(
+      this.signupForm.get('username')?.value,
+      this.signupForm.get('email')?.value,
+      this.signupForm.get('password')?.value
+    ).subscribe({
+      next: () => {
         this.router.navigate(['/login']);
       },
-      error => {
-        this.error = error.message || 'Error creating account';
+      error: (error) => {
+        this.error = error.message || 'Registration failed. Please try again.';
         this.loading = false;
       }
-    );
+    });
   }
 }

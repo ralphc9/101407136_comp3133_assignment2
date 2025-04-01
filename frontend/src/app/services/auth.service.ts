@@ -1,55 +1,95 @@
-import { Injectable } from '@angular/core';
+// src/app/services/auth.service.ts
+import { Injectable, inject } from '@angular/core';
 import { Apollo } from 'apollo-angular';
-import { Observable, BehaviorSubject } from 'rxjs';
-import { map, tap } from 'rxjs/operators';
-import { User } from '../models/user.model';
+import { BehaviorSubject, Observable, throwError } from 'rxjs';
+import { map, catchError, tap } from 'rxjs/operators';
 import { Router } from '@angular/router';
-import { LOGIN, SIGNUP, GET_CURRENT_USER } from '../graphql/auth.operations';
+import { gql } from 'apollo-angular';
+import { User } from '../models/user.model';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
+  private apollo = inject(Apollo);
+  private router = inject(Router);
+  
   private currentUserSubject = new BehaviorSubject<User | null>(null);
   public currentUser$ = this.currentUserSubject.asObservable();
 
-  constructor(
-    private apollo: Apollo,
-    private router: Router
-  ) {
-    // Check if user is already logged in from localStorage
+  constructor() {
+    // Check if user is already logged in
     const storedUser = localStorage.getItem('currentUser');
     if (storedUser) {
       this.currentUserSubject.next(JSON.parse(storedUser));
     }
   }
 
+  public get currentUserValue(): User | null {
+    return this.currentUserSubject.value;
+  }
+
   login(username: string, password: string): Observable<User> {
     return this.apollo.mutate<{ login: User }>({
-      mutation: LOGIN,
-      variables: { username, password }
+      mutation: gql`
+        mutation Login($username: String!, $password: String!) {
+          login(username: $username, password: $password) {
+            id
+            username
+            email
+            token
+          }
+        }
+      `,
+      variables: {
+        username,
+        password
+      }
     }).pipe(
-      map(result => result.data?.login as User),
-      tap(user => {
-        if (user && user.token) {
+      map(result => {
+        if (result.data?.login) {
+          const user = result.data.login;
           localStorage.setItem('currentUser', JSON.stringify(user));
           this.currentUserSubject.next(user);
+          return user;
         }
+        throw new Error('Login failed');
+      }),
+      catchError(error => {
+        return throwError(() => error);
       })
     );
   }
 
   signup(username: string, email: string, password: string): Observable<User> {
     return this.apollo.mutate<{ signup: User }>({
-      mutation: SIGNUP,
-      variables: { username, email, password }
+      mutation: gql`
+        mutation Signup($username: String!, $email: String!, $password: String!) {
+          signup(username: $username, email: $email, password: $password) {
+            id
+            username
+            email
+            token
+          }
+        }
+      `,
+      variables: {
+        username,
+        email,
+        password
+      }
     }).pipe(
-      map(result => result.data?.signup as User),
-      tap(user => {
-        if (user && user.token) {
+      map(result => {
+        if (result.data?.signup) {
+          const user = result.data.signup;
           localStorage.setItem('currentUser', JSON.stringify(user));
           this.currentUserSubject.next(user);
+          return user;
         }
+        throw new Error('Signup failed');
+      }),
+      catchError(error => {
+        return throwError(() => error);
       })
     );
   }
@@ -57,19 +97,10 @@ export class AuthService {
   logout(): void {
     localStorage.removeItem('currentUser');
     this.currentUserSubject.next(null);
-    this.apollo.client.resetStore();
     this.router.navigate(['/login']);
   }
 
   isLoggedIn(): boolean {
-    return !!this.currentUserSubject.value;
-  }
-
-  getCurrentUser(): User | null {
-    return this.currentUserSubject.value;
-  }
-
-  getToken(): string | null {
-    return this.currentUserSubject.value?.token || null;
+    return !!this.currentUserValue;
   }
 }

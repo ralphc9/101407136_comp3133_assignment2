@@ -4,10 +4,11 @@ import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-root',
-  templateUrl: './app.component.html',
-  styleUrls: ['./app.component.css'],
   standalone: true,
-  imports: [RouterModule, CommonModule]
+  imports: [RouterModule, CommonModule],
+  template: `
+    <router-outlet></router-outlet>
+  `
 })
 export class AppComponent {
   title = 'Employee Management System';

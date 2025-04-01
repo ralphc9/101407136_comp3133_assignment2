@@ -1,24 +1,29 @@
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { Router, RouterModule } from '@angular/router';
 import { EmployeeService } from '../../../services/employee.service';
+import { CommonModule } from '@angular/common';
+import { HeaderComponent } from '../../shared/header/header.component';
+import { FooterComponent } from '../../shared/footer/footer.component';
 
 @Component({
   selector: 'app-employee-add',
   templateUrl: './employee-add.component.html',
-  styleUrls: ['./employee-add.component.css']
+  styleUrls: ['./employee-add.component.css'],
+  standalone: true,
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, HeaderComponent, FooterComponent]
 })
 export class EmployeeAddComponent implements OnInit {
   employeeForm!: FormGroup;
   loading = false;
   submitted = false;
   error = '';
-  imagePreview: string | ArrayBuffer | null = null;
+  profileImagePreview: string | null = null;
 
   constructor(
     private formBuilder: FormBuilder,
-    private employeeService: EmployeeService,
-    private router: Router
+    private router: Router,
+    private employeeService: EmployeeService
   ) { }
 
   ngOnInit(): void {
@@ -38,13 +43,14 @@ export class EmployeeAddComponent implements OnInit {
   get f() { return this.employeeForm.controls; }
 
   onFileChange(event: Event): void {
-    const fileInput = event.target as HTMLInputElement;
-    if (fileInput.files && fileInput.files.length) {
-      const file = fileInput.files[0];
+    const input = event.target as HTMLInputElement;
+    
+    if (input.files && input.files.length) {
+      const file = input.files[0];
       const reader = new FileReader();
       
       reader.onload = () => {
-        this.imagePreview = reader.result;
+        this.profileImagePreview = reader.result as string;
         this.employeeForm.patchValue({
           profilePicture: reader.result
         });
@@ -63,15 +69,23 @@ export class EmployeeAddComponent implements OnInit {
     }
 
     this.loading = true;
-    this.employeeService.addEmployee(this.employeeForm.value)
-      .subscribe(
-        data => {
-          this.router.navigate(['/employees']);
-        },
-        error => {
-          this.error = error.message || 'Error adding employee. Please try again.';
-          this.loading = false;
-        }
-      );
+    this.employeeService.addEmployee({
+      firstName: this.employeeForm.get('firstName')?.value,
+      lastName: this.employeeForm.get('lastName')?.value,
+      email: this.employeeForm.get('email')?.value,
+      gender: this.employeeForm.get('gender')?.value,
+      salary: this.employeeForm.get('salary')?.value ? parseFloat(this.employeeForm.get('salary')?.value) : undefined,
+      position: this.employeeForm.get('position')?.value,
+      department: this.employeeForm.get('department')?.value,
+      profilePicture: this.employeeForm.get('profilePicture')?.value
+    }).subscribe({
+      next: () => {
+        this.router.navigate(['/employees']);
+      },
+      error: (error) => {
+        this.error = error.message || 'Failed to add employee. Please try again.';
+        this.loading = false;
+      }
+    });
   }
 }

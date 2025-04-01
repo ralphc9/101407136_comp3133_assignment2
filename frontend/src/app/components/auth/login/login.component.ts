@@ -1,12 +1,15 @@
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../../services/auth.service';
-import { first } from 'rxjs/operators';
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-login',
-  template: '<div style="padding: 20px; background-color: lightblue;"><h2>Login Component Works!</h2></div>'
+  templateUrl: './login.component.html',
+  styleUrls: ['./login.component.css'],
+  standalone: true,
+  imports: [CommonModule, ReactiveFormsModule, RouterModule]
 })
 export class LoginComponent implements OnInit {
   loginForm!: FormGroup;
@@ -26,8 +29,6 @@ export class LoginComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    // Simple console log to verify component initialization
-    console.log('Login component initialized');
     this.loginForm = this.formBuilder.group({
       username: ['', Validators.required],
       password: ['', Validators.required]
@@ -46,19 +47,17 @@ export class LoginComponent implements OnInit {
     }
 
     this.loading = true;
-  this.authService.login(
-    this.loginForm.get('username')?.value, 
-    this.loginForm.get('password')?.value
-  )
-    .pipe(first())
-    .subscribe(
-      data => {
+    this.authService.login(
+      this.loginForm.get('username')?.value, 
+      this.loginForm.get('password')?.value
+    ).subscribe({
+      next: () => {
         this.router.navigate(['/employees']);
       },
-      error => {
+      error: (error) => {
         this.error = error.message || 'Invalid username or password';
         this.loading = false;
       }
-    );
+    });
   }
 }

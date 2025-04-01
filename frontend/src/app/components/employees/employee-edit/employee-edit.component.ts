@@ -1,21 +1,25 @@
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
-import { Employee } from '../../../models/employee.model';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { EmployeeService } from '../../../services/employee.service';
+import { CommonModule } from '@angular/common';
+import { HeaderComponent } from '../../shared/header/header.component';
+import { FooterComponent } from '../../shared/footer/footer.component';
 
 @Component({
   selector: 'app-employee-edit',
   templateUrl: './employee-edit.component.html',
-  styleUrls: ['./employee-edit.component.css']
+  styleUrls: ['./employee-edit.component.css'],
+  standalone: true,
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, HeaderComponent, FooterComponent]
 })
 export class EmployeeEditComponent implements OnInit {
   employeeForm!: FormGroup;
   loading = false;
   submitted = false;
   error = '';
-  employeeId: string = '';
-  imagePreview: string | ArrayBuffer | null = null;
+  employeeId: string | null = null;
+  profileImagePreview: string | null = null;
 
   constructor(
     private formBuilder: FormBuilder,
@@ -36,26 +40,32 @@ export class EmployeeEditComponent implements OnInit {
       profilePicture: ['']
     });
 
-    this.loading = true;
-    const id = this.route.snapshot.paramMap.get('id');
+    this.employeeId = this.route.snapshot.paramMap.get('id');
     
-    if (id) {
-      this.employeeId = id;
-      this.employeeService.getEmployee(id)
-        .subscribe(
-          employee => {
-            this.employeeForm.patchValue(employee);
-            this.imagePreview = employee.profilePicture || null;
+    if (this.employeeId) {
+      this.loading = true;
+      this.employeeService.getEmployee(this.employeeId)
+        .subscribe({
+          next: (employee) => {
+            this.employeeForm.patchValue({
+              firstName: employee.firstName,
+              lastName: employee.lastName,
+              email: employee.email,
+              gender: employee.gender,
+              salary: employee.salary,
+              position: employee.position,
+              department: employee.department,
+              profilePicture: employee.profilePicture
+            });
+            
+            this.profileImagePreview = employee.profilePicture || null;
             this.loading = false;
           },
-          error => {
+          error: () => {
             this.error = 'Error loading employee data. Please try again.';
             this.loading = false;
           }
-        );
-    } else {
-      this.error = 'Employee ID not provided.';
-      this.loading = false;
+        });
     }
   }
 
@@ -63,13 +73,14 @@ export class EmployeeEditComponent implements OnInit {
   get f() { return this.employeeForm.controls; }
 
   onFileChange(event: Event): void {
-    const fileInput = event.target as HTMLInputElement;
-    if (fileInput.files && fileInput.files.length) {
-      const file = fileInput.files[0];
+    const input = event.target as HTMLInputElement;
+    
+    if (input.files && input.files.length) {
+      const file = input.files[0];
       const reader = new FileReader();
       
       reader.onload = () => {
-        this.imagePreview = reader.result;
+        this.profileImagePreview = reader.result as string;
         this.employeeForm.patchValue({
           profilePicture: reader.result
         });
@@ -87,21 +98,30 @@ export class EmployeeEditComponent implements OnInit {
       return;
     }
 
-    this.loading = true;
-    const updatedEmployee = {
-      ...this.employeeForm.value,
-      id: this.employeeId
-    };
+    if (!this.employeeId) {
+      this.error = 'Employee ID not found.';
+      return;
+    }
 
-    this.employeeService.updateEmployee(updatedEmployee)
-      .subscribe(
-        data => {
-          this.router.navigate(['/employees', this.employeeId]);
-        },
-        error => {
-          this.error = error.message || 'Error updating employee. Please try again.';
-          this.loading = false;
-        }
-      );
+    this.loading = true;
+    this.employeeService.updateEmployee({
+      id: this.employeeId,
+      firstName: this.employeeForm.get('firstName')?.value,
+      lastName: this.employeeForm.get('lastName')?.value,
+      email: this.employeeForm.get('email')?.value,
+      gender: this.employeeForm.get('gender')?.value,
+      salary: this.employeeForm.get('salary')?.value ? parseFloat(this.employeeForm.get('salary')?.value) : undefined,
+      position: this.employeeForm.get('position')?.value,
+      department: this.employeeForm.get('department')?.value,
+      profilePicture: this.employeeForm.get('profilePicture')?.value
+    }).subscribe({
+      next: () => {
+        this.router.navigate(['/employees', this.employeeId]);
+      },
+      error: (error) => {
+        this.error = error.message || 'Failed to update employee. Please try again.';
+        this.loading = false;
+      }
+    });
   }
 }

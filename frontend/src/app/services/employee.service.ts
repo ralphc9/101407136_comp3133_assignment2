@@ -1,77 +1,187 @@
-import { Injectable } from '@angular/core';
+// src/app/services/employee.service.ts
+import { Injectable, inject } from '@angular/core';
 import { Apollo } from 'apollo-angular';
-import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { Observable, throwError } from 'rxjs';
+import { map, catchError } from 'rxjs/operators';
+import { gql } from 'apollo-angular';
 import { Employee } from '../models/employee.model';
-import {
-  GET_EMPLOYEES,
-  GET_EMPLOYEE,
-  SEARCH_EMPLOYEES,
-  ADD_EMPLOYEE,
-  UPDATE_EMPLOYEE,
-  DELETE_EMPLOYEE
-} from '../graphql/employee.operations';
 
 @Injectable({
   providedIn: 'root'
 })
 export class EmployeeService {
-  
-  constructor(private apollo: Apollo) {}
-  
+  private apollo = inject(Apollo);
+
   getEmployees(): Observable<Employee[]> {
-    return this.apollo.watchQuery<{ getEmployees: Employee[] }>({
-      query: GET_EMPLOYEES
-    }).valueChanges.pipe(
-      map(result => result.data.getEmployees)
+    return this.apollo.query<{ getEmployees: Employee[] }>({
+      query: gql`
+        query GetEmployees {
+          getEmployees {
+            id
+            firstName
+            lastName
+            email
+            gender
+            salary
+            position
+            department
+            profilePicture
+          }
+        }
+      `
+    }).pipe(
+      map(result => result.data.getEmployees),
+      catchError(error => throwError(() => error))
     );
   }
-  
+
   getEmployee(id: string): Observable<Employee> {
-    return this.apollo.watchQuery<{ getEmployee: Employee }>({
-      query: GET_EMPLOYEE,
+    return this.apollo.query<{ getEmployee: Employee }>({
+      query: gql`
+        query GetEmployee($id: ID!) {
+          getEmployee(id: $id) {
+            id
+            firstName
+            lastName
+            email
+            gender
+            salary
+            position
+            department
+            profilePicture
+          }
+        }
+      `,
       variables: { id }
-    }).valueChanges.pipe(
-      map(result => result.data.getEmployee)
+    }).pipe(
+      map(result => result.data.getEmployee),
+      catchError(error => throwError(() => error))
     );
   }
-  
+
   searchEmployees(department?: string, position?: string): Observable<Employee[]> {
-    return this.apollo.watchQuery<{ searchEmployees: Employee[] }>({
-      query: SEARCH_EMPLOYEES,
+    return this.apollo.query<{ searchEmployees: Employee[] }>({
+      query: gql`
+        query SearchEmployees($department: String, $position: String) {
+          searchEmployees(department: $department, position: $position) {
+            id
+            firstName
+            lastName
+            email
+            gender
+            salary
+            position
+            department
+            profilePicture
+          }
+        }
+      `,
       variables: { department, position }
-    }).valueChanges.pipe(
-      map(result => result.data.searchEmployees)
+    }).pipe(
+      map(result => result.data.searchEmployees),
+      catchError(error => throwError(() => error))
     );
   }
-  
-  addEmployee(employee: Employee): Observable<Employee> {
+
+  addEmployee(employee: Partial<Employee>): Observable<Employee> {
     return this.apollo.mutate<{ addEmployee: Employee }>({
-      mutation: ADD_EMPLOYEE,
-      variables: employee,
-      refetchQueries: [{ query: GET_EMPLOYEES }]
+      mutation: gql`
+        mutation AddEmployee(
+          $firstName: String!
+          $lastName: String!
+          $email: String!
+          $gender: String
+          $salary: Float
+          $position: String
+          $department: String
+          $profilePicture: String
+        ) {
+          addEmployee(
+            firstName: $firstName
+            lastName: $lastName
+            email: $email
+            gender: $gender
+            salary: $salary
+            position: $position
+            department: $department
+            profilePicture: $profilePicture
+          ) {
+            id
+            firstName
+            lastName
+            email
+            gender
+            salary
+            position
+            department
+            profilePicture
+          }
+        }
+      `,
+      variables: employee
     }).pipe(
-      map(result => result.data?.addEmployee as Employee)
+      map(result => result.data!.addEmployee),
+      catchError(error => throwError(() => error))
     );
   }
-  
-  updateEmployee(employee: Partial<Employee> & { id: string }): Observable<Employee> {
+
+  updateEmployee(employee: Partial<Employee>): Observable<Employee> {
     return this.apollo.mutate<{ updateEmployee: Employee }>({
-      mutation: UPDATE_EMPLOYEE,
-      variables: employee,
-      refetchQueries: [{ query: GET_EMPLOYEES }]
+      mutation: gql`
+        mutation UpdateEmployee(
+          $id: ID!
+          $firstName: String
+          $lastName: String
+          $email: String
+          $gender: String
+          $salary: Float
+          $position: String
+          $department: String
+          $profilePicture: String
+        ) {
+          updateEmployee(
+            id: $id
+            firstName: $firstName
+            lastName: $lastName
+            email: $email
+            gender: $gender
+            salary: $salary
+            position: $position
+            department: $department
+            profilePicture: $profilePicture
+          ) {
+            id
+            firstName
+            lastName
+            email
+            gender
+            salary
+            position
+            department
+            profilePicture
+          }
+        }
+      `,
+      variables: employee
     }).pipe(
-      map(result => result.data?.updateEmployee as Employee)
+      map(result => result.data!.updateEmployee),
+      catchError(error => throwError(() => error))
     );
   }
-  
-  deleteEmployee(id: string): Observable<{ id: string }> {
-    return this.apollo.mutate<{ deleteEmployee: { id: string } }>({
-      mutation: DELETE_EMPLOYEE,
-      variables: { id },
-      refetchQueries: [{ query: GET_EMPLOYEES }]
+
+  deleteEmployee(id: string): Observable<Employee> {
+    return this.apollo.mutate<{ deleteEmployee: Employee }>({
+      mutation: gql`
+        mutation DeleteEmployee($id: ID!) {
+          deleteEmployee(id: $id) {
+            id
+          }
+        }
+      `,
+      variables: { id }
     }).pipe(
-      map(result => result.data?.deleteEmployee as { id: string })
+      map(result => result.data!.deleteEmployee),
+      catchError(error => throwError(() => error))
     );
   }
 }
