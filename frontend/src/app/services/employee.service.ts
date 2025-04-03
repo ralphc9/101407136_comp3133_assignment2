@@ -10,7 +10,7 @@ import { Employee } from '../models/employee.model';
   providedIn: 'root'
 })
 export class EmployeeService {
-  private apollo = inject(Apollo);
+  constructor(private apollo: Apollo) {}
 
   getEmployees(): Observable<Employee[]> {
     return this.apollo.query<{ getEmployees: Employee[] }>({
