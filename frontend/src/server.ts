@@ -15,18 +15,6 @@ const app = express();
 const angularApp = new AngularNodeAppEngine();
 
 /**
- * Example Express Rest API endpoints can be defined here.
- * Uncomment and define endpoints as necessary.
- *
- * Example:
- * ```ts
- * app.get('/api/**', (req, res) => {
- *   // Handle API request
- * });
- * ```
- */
-
-/**
  * Serve static files from /browser
  */
 app.use(
@@ -36,6 +24,18 @@ app.use(
     redirect: false,
   }),
 );
+
+/**
+ * Ensure employees/:id route uses SSR instead of prerendering
+ */
+app.use('/employees/:id', (req, res, next) => {
+  angularApp
+    .handle(req, { renderMode: 'server' }) // Force SSR for dynamic routes
+    .then((response) =>
+      response ? writeResponseToNodeResponse(response, res) : next(),
+    )
+    .catch(next);
+});
 
 /**
  * Handle all other requests by rendering the Angular application.
@@ -51,7 +51,7 @@ app.use('/**', (req, res, next) => {
 
 /**
  * Start the server if this module is the main entry point.
- * The server listens on the port defined by the `PORT` environment variable, or defaults to 4000.
+ * The server listens on the port defined by the `PORT` environment variable, or defaults to 5000.
  */
 if (isMainModule(import.meta.url)) {
   const port = process.env['PORT'] || 5000;
