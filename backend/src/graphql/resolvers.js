@@ -26,7 +26,7 @@ const resolvers = {
 
   Mutation: {
     signup: async (_, { username, email, password }) => {
-      // Check if user already exists
+
       const existingUser = await User.findOne({ $or: [{ email }, { username }] });
       if (existingUser) {
         throw new Error('User already exists');

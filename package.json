@@ -5,8 +5,10 @@
     "@angular/material": "^19.2.7",
     "@apollo/client": "^3.13.5",
     "apollo-angular": "^10.0.3",
+    "apollo-server-micro": "^3.13.0",
     "bootstrap": "^5.3.3",
     "graphql": "^16.10.0",
-    "mongodb": "^6.15.0"
+    "mongodb": "^6.15.0",
+    "mongoose": "^8.13.2"
   }
 }

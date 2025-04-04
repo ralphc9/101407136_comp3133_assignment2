@@ -1,6 +1,5 @@
 const { gql } = require('apollo-server-express');
 
-// Define your types here
 const typeDefs = gql`
   type Employee {
     id: ID!

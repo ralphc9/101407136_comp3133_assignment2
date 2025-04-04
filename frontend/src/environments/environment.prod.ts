@@ -1,4 +1,5 @@
 export const environment = {
     production: true,
-    apiUrl: '/graphql'
+    apiUrl: '/api/graphql'
+    //apiUrl: '/graphql'
   };
