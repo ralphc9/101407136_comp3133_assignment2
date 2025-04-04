@@ -25,12 +25,14 @@ export const routes: Routes = [
   { 
     path: 'employees/:id', 
     component: EmployeeDetailsComponent, 
-    canActivate: [AuthGuard] 
+    canActivate: [AuthGuard]
+  
   },
   { 
     path: 'employees/:id/edit', 
     component: EmployeeEditComponent, 
-    canActivate: [AuthGuard] 
+    canActivate: [AuthGuard]
+    
   },
   { path: '**', redirectTo: '/login' }
 ];
