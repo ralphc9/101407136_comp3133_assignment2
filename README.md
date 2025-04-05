@@ -1,0 +1,1 @@
+For project I made the frontend continuing off of the COMP3133 assignment 1, built using Angular. It interacts with the backend API for user authentication and employee management. It provides a user interface to sign up, log in, and manage employees.
